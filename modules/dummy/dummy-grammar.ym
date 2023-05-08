@@ -1,0 +1,52 @@
+%code requires {
+
+#include "dummy-parser.h"
+
+}
+
+%code {
+
+#include "dummy.h"
+
+#include "cfg-grammar-internal.h"
+#include "plugin.h"
+}
+
+%define api.prefix {dummy_}
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_DUMMY
+%token KW_FILENAME
+
+%%
+
+start
+        : LL_CONTEXT_DESTINATION KW_DUMMY
+          {
+            last_driver = *instance = dummy_dd_new(configuration);
+          }
+          '(' _inner_dest_context_push dummy_option _inner_dest_context_pop ')' { YYACCEPT; }
+;
+
+dummy_options
+        : dummy_option dummy_options
+        |
+        ;
+
+dummy_option
+        : KW_FILENAME '(' string ')'
+          {
+            dummy_dd_set_filename(last_driver, $3);
+            free($3);
+          }
+        | threaded_dest_driver_general_option
+;
+
+/* INCLUDE_RULES */
+
+%%
